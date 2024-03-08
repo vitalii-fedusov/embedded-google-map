@@ -1,7 +1,8 @@
 import logo from './logo.svg';
 import './App.css';
+import React from 'react';
 
-function App() {
+export const App: React.FC = () => {
   return (
     <div className="App">
       <header className="App-header">
@@ -16,10 +17,10 @@ function App() {
           rel="noopener noreferrer"
         >
           Learn React
+          Create develop branch
         </a>
+        <h1>Test commit</h1>
       </header>
     </div>
   );
 }
-
-export default App;
