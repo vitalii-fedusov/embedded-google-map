@@ -19,6 +19,7 @@ export const App: React.FC = () => {
           Learn React
           Create develop branch
         </a>
+        <h1>Test commit</h1>
       </header>
     </div>
   );
