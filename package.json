@@ -52,5 +52,9 @@
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "dotenv": "^16.4.5"
+  },
+  "resolutions": {
+    "@typescript-eslint/eslint-plugin": "6.x",
+    "@typescript-eslint/parser": "6.x"
   }
 }
