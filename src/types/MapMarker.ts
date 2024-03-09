@@ -1,5 +1,5 @@
 export type MapMarker = {
-  id: number,
+  id: string,
   location: {
     lat: number,
     lng: number,
