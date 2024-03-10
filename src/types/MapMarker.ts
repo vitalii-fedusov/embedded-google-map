@@ -6,5 +6,5 @@ export type MapMarker = {
   },
   time: Date,
   isOpen: boolean,
-  next: null | MapMarker,
+  next: string | null,
 }

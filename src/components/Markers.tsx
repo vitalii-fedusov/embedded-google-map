@@ -9,12 +9,24 @@ import { db } from "../firebase";
 type Props = {
   positions: MapMarker[];
   setIsDragging: (value: boolean) => void;
+  deletePosition: (id: string) => void;
+  markers: { [key: string]: Marker };
+  setMarkerRef: (marker: Marker | null, key: string) => void;
+  setMarkers: (value: any) => void;
 };
 
-export const Markers: React.FC<Props> = ({ positions, setIsDragging }) => {
+export const Markers: React.FC<Props> = ({ 
+  positions, 
+  setIsDragging, 
+  deletePosition,
+  markers,
+  setMarkerRef,
+  setMarkers,
+}) => {
   const map = useMap();
-  const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
   const clusterer = useRef<MarkerClusterer | null>(null);
+
+  console.log(markers);
 
   const handleDragEnd = async (
     e: google.maps.MapMouseEvent,
@@ -51,21 +63,6 @@ export const Markers: React.FC<Props> = ({ positions, setIsDragging }) => {
     clusterer.current?.addMarkers(Object.values(markers));
   }, [markers]);
 
-  const setMarkerRef = (marker: Marker | null, key: string) => {
-    if (marker && markers[key]) return;
-    if (!marker && !markers[key]) return;
-
-    setMarkers((prev) => {
-      if (marker) {
-        return { ...prev, [key]: marker };
-      } else {
-        const newMarkers = { ...prev };
-        delete newMarkers[key];
-        return newMarkers;
-      }
-    });
-  };
-
   return (
     <>
       {positions.map((position) => (
@@ -91,7 +88,14 @@ export const Markers: React.FC<Props> = ({ positions, setIsDragging }) => {
               position={position.location}
               onCloseClick={() => toggleOpen(position)}
             >
-              <p>{`My id is: ${position.id}`}</p>
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+                <p>{`My id is: ${position.id}`}</p>
+                <button className="button" onClick={() => {
+                  deletePosition(position.id);
+                }}>
+                  delete this marker
+                </button>
+              </div>
             </InfoWindow>
           )}
         </React.Fragment>

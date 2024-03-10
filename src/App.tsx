@@ -1,11 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import classnames from "classnames";
-import {
-  APIProvider,
-  Map,
-  MapMouseEvent,
-} from "@vis.gl/react-google-maps";
+import { APIProvider, Map, MapMouseEvent } from "@vis.gl/react-google-maps";
 import { MapMarker } from "./types/MapMarker.ts";
 import { db } from "./firebase.js";
 import {
@@ -15,19 +10,46 @@ import {
   doc,
   addDoc,
   deleteDoc,
-  getDocs,
+  updateDoc,
 } from "firebase/firestore";
 import { Markers } from "./components/Markers.tsx";
+import { Aside } from "./components/Aside.tsx";
+import type { Marker } from '@googlemaps/markerclusterer';
 
-const {
-  REACT_APP_GOOGLE_MAPS_API_KEY,
-  REACT_APP_MAP_ID,
-} = process.env;
+const { REACT_APP_GOOGLE_MAPS_API_KEY, REACT_APP_MAP_ID } = process.env;
 
 export const App: React.FC = () => {
   const position = { lat: 49.81615484961103, lng: 23.995046766797874 };
   const [positions, setPositions] = useState<MapMarker[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [markers, setMarkers] = useState<{ [key: string]: Marker }>({});
+
+  const setMarkerRef = (marker: Marker | null, key: string) => {
+    if (marker && markers[key]) return;
+    if (!marker && !markers[key]) return;
+
+    setMarkers((prevMarkers) => {
+      if (!marker || prevMarkers[key]) {
+        return prevMarkers;
+      }
+  
+      return { ...prevMarkers, [key]: marker };
+    });
+  };
+
+  // useEffect(() => {
+  //   const newMarkers = {...markers};
+  
+  //   for (const key in markers) {
+  //     if (positions.some(item => item.id === key)) {
+  //       continue;
+  //     } else {
+  //       delete markers[key];
+  //     }
+  //   }
+  
+  //   setMarkers(newMarkers);
+  // }, [positions]);
 
   useEffect(() => {
     const q = query(collection(db, "positions"));
@@ -44,6 +66,22 @@ export const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    positions.map((item, index) => {
+      if (positions.length <= 1) {
+        return item;
+      }
+
+      if (index < positions.length - 1) {
+        updateDoc(doc(db, "positions", positions[index].id), {
+          next: positions[index + 1].id,
+        });
+      }
+
+      return item;
+    });
+  }, [positions]);
+
   const createPosition = async (e: MapMouseEvent) => {
     if (isDragging) {
       return;
@@ -56,6 +94,7 @@ export const App: React.FC = () => {
       },
       time: new Date(),
       isOpen: false,
+      next: null,
     };
 
     await addDoc(collection(db, "positions"), newPosition);
@@ -63,20 +102,6 @@ export const App: React.FC = () => {
 
   const deletePosition = async (id: string) => {
     await deleteDoc(doc(db, "positions", id));
-  };
-
-  const deleteAllPositions = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "positions"));
-      
-      querySnapshot.forEach(async (doc) => {
-        await deleteDoc(doc.ref);
-      });
-  
-      console.log("All positions deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting positions:", error);
-    }
   };
 
   return (
@@ -92,45 +117,16 @@ export const App: React.FC = () => {
           onClick={createPosition}
         >
           <Markers
-            positions={positions} 
+            positions={positions}
             setIsDragging={setIsDragging}
+            deletePosition={deletePosition}
+            markers={markers}
+            setMarkerRef={setMarkerRef}
+            setMarkers={setMarkers}
           />
         </Map>
       </div>
-      <div className="aside page__aside">
-        <div className="aside__top">
-          <div>Markers</div>
-          <button
-            className="button"
-            onClick={deleteAllPositions}
-          >
-            Delete All
-          </button>
-        </div>
-        <div className="positions">
-          {positions.map((marker) => (
-            <div
-              key={marker.id}
-              className={classnames("position", {
-                "position--selected": marker.isOpen,
-              })}
-            >
-              <div>{`id: ${marker.id}`}</div>
-              <div>{`lat: ${marker.location.lat}`}</div>
-              <div>{`lng: ${marker.location.lng}`}</div>
-              <div>{`isOpen: ${marker.isOpen}`}</div>
-              {/* @ts-ignore */}
-              <div>{`createdAt: ${marker.time.toDate()}`}</div>
-              <button
-                className="button"
-                onClick={() => deletePosition(marker.id)}
-              >
-                Delete Marker
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Aside positions={positions} deletePosition={deletePosition} setMarkers={setMarkers} />
     </APIProvider>
   );
 };
