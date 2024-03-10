@@ -3,11 +3,8 @@ import React, { useEffect, useState } from "react";
 import classnames from "classnames";
 import {
   APIProvider,
-  AdvancedMarker,
-  InfoWindow,
   Map,
   MapMouseEvent,
-  Pin,
 } from "@vis.gl/react-google-maps";
 import { MapMarker } from "./types/MapMarker.ts";
 import { db } from "./firebase.js";
@@ -15,18 +12,20 @@ import {
   query,
   collection,
   onSnapshot,
-  updateDoc,
   doc,
   addDoc,
   deleteDoc,
   getDocs,
 } from "firebase/firestore";
+import { Markers } from "./components/Markers.tsx";
 
-const { REACT_APP_GOOGLE_MAPS_API_KEY } = process.env;
-const { REACT_APP_MAP_ID } = process.env;
+const {
+  REACT_APP_GOOGLE_MAPS_API_KEY,
+  REACT_APP_MAP_ID,
+} = process.env;
 
 export const App: React.FC = () => {
-  const position = { lat: 53.54992, lng: 10.00678 };
+  const position = { lat: 49.81615484961103, lng: 23.995046766797874 };
   const [positions, setPositions] = useState<MapMarker[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -38,20 +37,12 @@ export const App: React.FC = () => {
         // @ts-ignore
         positionsArr.push({ ...doc.data(), id: doc.id });
       });
-      console.log(positionsArr);
 
       setPositions(positionsArr);
-      console.log(positions);
     });
 
     return () => unsubscribe();
   }, []);
-
-  const toggleOpen = async (selectedMarker: MapMarker) => {
-    await updateDoc(doc(db, "positions", selectedMarker.id), {
-      isOpen: !selectedMarker.isOpen,
-    });
-  };
 
   const createPosition = async (e: MapMouseEvent) => {
     if (isDragging) {
@@ -68,23 +59,6 @@ export const App: React.FC = () => {
     };
 
     await addDoc(collection(db, "positions"), newPosition);
-  };
-
-  const handleDragEnd = async (
-    e: google.maps.MapMouseEvent,
-    marker: MapMarker
-  ) => {
-    const newLat = e.latLng?.lat() || 0;
-    const newLng = e.latLng?.lng() || 0;
-
-    await updateDoc(doc(db, "positions", marker.id), {
-      location: {
-        lat: newLat,
-        lng: newLng,
-      },
-    });
-
-    setIsDragging(false);
   };
 
   const deletePosition = async (id: string) => {
@@ -117,33 +91,10 @@ export const App: React.FC = () => {
           disableDefaultUI={false}
           onClick={createPosition}
         >
-          {positions.map((marker, index) => (
-            <React.Fragment key={index}>
-              <AdvancedMarker
-                position={marker.location}
-                className="advanced-marker"
-                onClick={() => toggleOpen(marker)}
-                draggable={true}
-                onDrag={() => setIsDragging(true)}
-                onDragEnd={(e) => handleDragEnd(e, marker)}
-              >
-                <Pin
-                  background={"grey"}
-                  borderColor={"green"}
-                  glyphColor={"purple"}
-                />
-              </AdvancedMarker>
-
-              {marker.isOpen && (
-                <InfoWindow
-                  position={marker.location}
-                  onCloseClick={() => toggleOpen(marker)}
-                >
-                  <p>{`My id is: ${marker.id}`}</p>
-                </InfoWindow>
-              )}
-            </React.Fragment>
-          ))}
+          <Markers
+            positions={positions} 
+            setIsDragging={setIsDragging}
+          />
         </Map>
       </div>
       <div className="aside page__aside">
